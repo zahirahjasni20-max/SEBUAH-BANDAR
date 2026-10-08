@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permainan Sebutan Bandar Kartun</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            touch-action: manipulation;
+        }
+        @keyframes bounce-car {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .car-bounce {
+            animation: bounce-car 0.35s ease-in-out infinite;
+        }
+        @keyframes mic-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .mic-active {
+            animation: mic-pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-sky-300 via-indigo-200 to-emerald-300 min-h-screen flex flex-col items-center justify-between p-3 sm:p-6 overflow-x-hidden">
+
+    <!-- Header / Score & Level Indicator -->
+    <header class="w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-4 flex justify-between items-center border border-white">
+        <div>
+            <h1 class="text-lg sm:text-2xl font-extrabold text-indigo-700 tracking-wide flex items-center gap-2">
+                🚗 Bandar Kartun
+            </h1>
+            <p id="levelIndicator" class="text-xs sm:text-sm font-semibold text-gray-600 mt-0.5">Tahap 1 / 10</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="bg-amber-100 border-2 border-amber-300 px-3.5 py-1.5 rounded-xl shadow-inner text-amber-800 font-bold text-sm sm:text-base flex items-center gap-1.5">
+                ⭐ Markah: <span id="scoreDisplay">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="w-full max-w-2xl my-3 flex-1 flex flex-col justify-center items-center">
+        <div class="relative w-full h-64 sm:h-80 bg-gradient-to-b from-sky-400 to-sky-200 rounded-3xl shadow-2xl overflow-hidden border-4 border-white flex flex-col justify-between">
+            
+            <!-- Sky Details -->
+            <div class="absolute top-4 left-6 w-16 h-8 bg-white/70 rounded-full blur-[1px]"></div>
+            <div class="absolute top-8 right-16 w-24 h-10 bg-white/70 rounded-full blur-[1px]"></div>
+            <div class="absolute top-4 right-24 w-10 h-10 bg-yellow-300 rounded-full shadow-lg"></div>
+
+            <!-- Cartoon City Skyline Backdrop -->
+            <div class="absolute bottom-16 left-0 right-0 h-28 flex items-end justify-around px-4 opacity-70 pointer-events-none">
+                <div class="w-12 h-20 bg-indigo-400 rounded-t-lg"></div>
+                <div class="w-16 h-28 bg-purple-400 rounded-t-lg"></div>
+                <div class="w-14 h-24 bg-blue-400 rounded-t-lg"></div>
+                <div class="w-20 h-32 bg-pink-400 rounded-t-lg"></div>
+                <div class="w-12 h-20 bg-teal-400 rounded-t-lg"></div>
+            </div>
+
+            <!-- Road / Street -->
+            <div class="absolute bottom-0 left-0 right-0 h-16 bg-gray-700 border-t-4 border-dashed border-yellow-300 flex items-center"></div>
+
+            <!-- Obstacle -->
+            <div id="obstacleContainer" class="absolute bottom-16 right-20 transition-all duration-700 ease-in-out flex flex-col items-center">
+                <div id="obstacleIcon" class="text-4xl sm:text-5xl mb-1 filter drop-shadow-md">🌳</div>
+                <div class="w-12 h-14 sm:w-16 sm:h-16 bg-rose-500 border-4 border-rose-700 rounded-xl shadow-lg flex items-center justify-center text-white font-bold text-xs">
+                    Halangan
+                </div>
+            </div>
+
+            <!-- Cartoon Car (Facing Right) -->
+            <div id="carElement" class="absolute bottom-16 left-8 transition-all duration-700 ease-in-out flex items-center car-bounce">
+                <div class="relative w-20 h-12 sm:w-24 sm:h-14 bg-amber-500 rounded-t-2xl rounded-b-lg border-2 border-amber-700 shadow-md flex items-center justify-center">
+                    <div class="absolute top-1 left-2 w-7 h-5 bg-sky-200 rounded-tl-xl border border-amber-700"></div>
+                    <div class="absolute top-1 right-2 w-8 h-5 bg-sky-200 rounded-tr-xl border border-amber-700"></div>
+                    <div class="absolute right-0 top-3 w-2 h-4 bg-yellow-200 rounded-l-md border border-yellow-500"></div>
+                    <div class="absolute -bottom-3 left-3 w-5 h-5 bg-gray-900 rounded-full border-2 border-gray-400"></div>
+                    <div class="absolute -bottom-3 right-3 w-5 h-5 bg-gray-900 rounded-full border-2 border-gray-400"></div>
+                </div>
+            </div>
+
+            <!-- Status Popup Overlay -->
+            <div id="statusOverlay" class="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center hidden z-20">
+                <div class="bg-white/95 px-6 py-4 rounded-2xl shadow-2xl text-center max-w-xs transform scale-95 transition-transform">
+                    <p id="statusEmoji" class="text-4xl mb-1">🎉</p>
+                    <p id="statusMessage" class="text-base sm:text-lg font-bold text-gray-800">Tahniah! Betul!</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Interaction Panel -->
+    <section class="w-full max-w-2xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-5 sm:p-6 flex flex-col items-center border border-white text-center">
+        
+        <!-- Target Sentence Box -->
+        <div class="mb-4 w-full">
+            <span class="text-xs uppercase tracking-wider font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">Sebut Ayat Ini:</span>
+            <h2 id="targetSentence" class="text-base sm:text-2xl font-extrabold text-gray-800 mt-2 min-h-[3rem] flex items-center justify-center px-2">
+                Taman ini besar dan hijau.
+            </h2>
+        </div>
+
+        <!-- Transcript Feedback -->
+        <div class="w-full bg-gray-50 rounded-2xl p-3 mb-5 border border-gray-200 min-h-[3.5rem] flex flex-col justify-center">
+            <p class="text-xs text-gray-500 font-semibold">Anda menyebut:</p>
+            <p id="spokenTranscript" class="text-sm sm:text-base font-medium text-indigo-600 italic">Tekan butang mikrofon dan mula bercakap...</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
+            <!-- Push-To-Talk Mic Button -->
+            <button id="micButton" class="w-full sm:w-auto flex-1 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-4 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-all transform active:scale-95 text-base sm:text-lg border-2 border-rose-300">
+                <span class="text-2xl">🎙️</span>
+                <span>Tekan & Sebut (Push-To-Talk)</span>
+            </button>
+
+            <!-- Next Level Button -->
+            <button id="nextButton" class="w-full sm:w-auto hidden bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all transform active:scale-95 text-base sm:text-lg border-2 border-emerald-300 animate-bounce">
+                <span>Tahap Seterusnya</span>
+                <span class="text-xl">➡️</span>
+            </button>
+        </div>
+
+    </section>
+
+    <script>
+        // Array of 10 sentences with place icons
+        const gameLevels = [
+            { text: "Taman ini besar dan hijau.", icon: "🌳" },
+            { text: "Perpustakaan itu sunyi dan bersih.", icon: "📚" },
+            { text: "Pasar itu sibuk dan bising.", icon: "🛒" },
+            { text: "Pusat membeli-belah itu besar dan terang.", icon: "🏬" },
+            { text: "Muzium itu lama tetapi menarik.", icon: "🏛️" },
+            { text: "Hospital itu besar dan moden.", icon: "🏥" },
+            { text: "Pawagam itu gelap tetapi selesa.", icon: "🍿" },
+            { text: "Taman permainan itu berwarna-warni.", icon: "🛝" },
+            { text: "Stesen kereta api itu sibuk.", icon: "🚉" },
+            { text: "Bandar ini cantik dan bersih.", icon: "🏙️" }
+        ];
+
+        let currentLevel = 0;
+        let score = 0;
+        let isAnswerChecked = false;
+
+        // DOM elements
+        const levelIndicator = document.getElementById("levelIndicator");
+        const scoreDisplay = document.getElementById("scoreDisplay");
+        const targetSentence = document.getElementById("targetSentence");
+        const spokenTranscript = document.getElementById("spokenTranscript");
+        const micButton = document.getElementById("micButton");
+        const nextButton = document.getElementById("nextButton");
+        const carElement = document.getElementById("carElement");
+        const obstacleContainer = document.getElementById("obstacleContainer");
+        const obstacleIcon = document.getElementById("obstacleIcon");
+        const statusOverlay = document.getElementById("statusOverlay");
+        const statusEmoji = document.getElementById("statusEmoji");
+        const statusMessage = document.getElementById("statusMessage");
+
+        // Web Audio API Synthesizer for sound effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'success') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'crash') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.25);
+                gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+            }
+        }
+
+        // Load level content
+        function loadLevel(index) {
+            if (index >= gameLevels.length) {
+                targetSentence.innerHTML = "🏆 Tahniah! Anda telah menamatkan semua tahap!";
+                micButton.style.display = "none";
+                nextButton.style.display = "none";
+                levelIndicator.innerText = "Tamat";
+                return;
+            }
+
+            currentLevel = index;
+            isAnswerChecked = false;
+            levelIndicator.innerText = `Tahap ${currentLevel + 1} / ${gameLevels.length}`;
+            targetSentence.innerText = gameLevels[currentLevel].text;
+            obstacleIcon.innerText = gameLevels[currentLevel].icon;
+            spokenTranscript.innerText = "Tekan butang mikrofon dan mula bercakap...";
+            
+            carElement.style.left = "32px";
+            obstacleContainer.style.right = "80px";
+            
+            nextButton.classList.add("hidden");
+            micButton.disabled = false;
+            micButton.classList.remove("opacity-50", "cursor-not-allowed");
+            statusOverlay.classList.add("hidden");
+        }
+
+        // Fuzzy matching string similarity (approx 75% - 90% tolerance)
+        function calculateSimilarity(str1, str2) {
+            const clean1 = str1.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+            const clean2 = str2.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+            
+            if (clean1 === clean2) return 1.0;
+
+            const words1 = clean1.split(/\s+/);
+            const words2 = clean2.split(/\s+/);
+            
+            let matchCount = 0;
+            words1.forEach(w => {
+                if (words2.includes(w)) matchCount++;
+            });
+
+            return matchCount / Math.max(words1.length, words2.length);
+        }
+
+        // Speech Recognition Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Pelayar ini tidak menyokong pengecaman suara. Sila gunakan Google Chrome.");
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = "ms-MY";
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            micButton.addEventListener("click", async () => {
+                if (isAnswerChecked) return;
+
+                // Request mic permission first
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (err) {
+                    console.error("Mic error:", err);
+                    showNotification("❌", "Sila benarkan akses mikrofon untuk bermain permainan ini.");
+                    return;
+                }
+
+                try {
+                    recognition.start();
+                    micButton.classList.add("mic-active", "bg-rose-700");
+                    spokenTranscript.innerText = "Mendengar... Sila sebut ayat dengan jelas.";
+                } catch (e) {
+                    console.error("Recognition start error:", e);
+                }
+            });
+
+            recognition.onresult = (event) => {
+                const speechResult = event.results[0][0].transcript;
+                spokenTranscript.innerText = `"${speechResult}"`;
+                micButton.classList.remove("mic-active", "bg-rose-700");
+
+                const targetText = gameLevels[currentLevel].text;
+                const similarity = calculateSimilarity(speechResult, targetText);
+
+                if (similarity >= 0.70 || speechResult.toLowerCase().includes(targetText.substring(0, 7).toLowerCase())) {
+                    // Correct Answer
+                    isAnswerChecked = true;
+                    score += 10;
+                    scoreDisplay.innerText = score;
+                    playSound('success');
+
+                    carElement.style.left = "calc(100% - 110px)";
+                    showNotification("🎉", "Hebat! Sebutan betul!");
+
+                    micButton.disabled = true;
+                    micButton.classList.add("opacity-50", "cursor-not-allowed");
+                    nextButton.classList.remove("hidden");
+                } else {
+                    // Incorrect Answer
+                    playSound('crash');
+                    carElement.style.left = "calc(100% - 135px)";
+                    showNotification("💥", "Kurang tepat. Cuba lagi!");
+
+                    setTimeout(() => {
+                        carElement.style.left = "32px";
+                    }, 800);
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error(event.error);
+                micButton.classList.remove("mic-active", "bg-rose-700");
+                if (event.error === 'no-speech' || event.error === 'aborted') {
+                    spokenTranscript.innerText = "Tiada suara dikesan. Sila cuba lagi.";
+                    showNotification("⚠️", "Tiada suara dikesan. Sila cuba lagi.");
+                } else {
+                    spokenTranscript.innerText = "Ralat pengecaman. Sila cuba semula.";
+                }
+            };
+
+            recognition.onend = () => {
+                micButton.classList.remove("mic-active", "bg-rose-700");
+            };
+        }
+
+        function showNotification(emoji, message) {
+            statusEmoji.innerText = emoji;
+            statusMessage.innerText = message;
+            statusOverlay.classList.remove("hidden");
+            setTimeout(() => {
+                if (!isAnswerChecked || emoji === "💥" || emoji === "⚠️") {
+                    statusOverlay.classList.add("hidden");
+                }
+            }, 1800);
+        }
+
+        nextButton.addEventListener("click", () => {
+            loadLevel(currentLevel + 1);
+        });
+
+        window.onload = () => {
+            loadLevel(0);
+        };
+    </script>
+</body>
+</html>
+```
+^^^eof
